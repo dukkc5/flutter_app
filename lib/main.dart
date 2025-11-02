@@ -20,21 +20,24 @@ class PTITWorkerApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProxyProvider<AuthProvider, GroupProvider>(
-          create: (_) => GroupProvider(AuthProvider()),
-          update: (_, auth, prev) => GroupProvider(auth),
-        ),
-        ChangeNotifierProxyProvider<AuthProvider, TaskProvider>(
-          create: (_) => TaskProvider(AuthProvider()),
-          update: (_, auth, prev) => TaskProvider(auth),
-        ),
-        ChangeNotifierProxyProvider<AuthProvider, InvitationProvider>(
-          create: (_) => InvitationProvider(AuthProvider()),
-          update: (_, auth, prev) => InvitationProvider(auth),
-        ),
-      ],
+       providers: [
+    ChangeNotifierProvider(create: (_) => AuthProvider()),
+
+    ChangeNotifierProxyProvider<AuthProvider, GroupProvider>(
+      create: (context) => GroupProvider(context.read<AuthProvider>()),
+      update: (context, auth, previous) => GroupProvider(auth),
+    ),
+
+    ChangeNotifierProxyProvider<AuthProvider, TaskProvider>(
+      create: (context) => TaskProvider(context.read<AuthProvider>()),
+      update: (context, auth, previous) => TaskProvider(auth),
+    ),
+
+    ChangeNotifierProxyProvider<AuthProvider, InvitationProvider>(
+      create: (context) => InvitationProvider(context.read<AuthProvider>()),
+      update: (context, auth, previous) => InvitationProvider(auth),
+    ),
+  ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'PTIT Worker',
@@ -43,14 +46,10 @@ class PTITWorkerApp extends StatelessWidget {
           colorScheme: ColorScheme.fromSeed(
             seedColor: AppColors.primary,
             primary: AppColors.primary,
-            background: Colors.white,
             surface: Colors.white,
           ),
           scaffoldBackgroundColor: const Color(0xFFF5F5F5),
-
-          // (MỚI) Thêm màu cho hiệu ứng nhấn (ripple)
           splashColor: AppColors.primary.withOpacity(0.1),
-
           textTheme: GoogleFonts.poppinsTextTheme(Theme.of(context).textTheme)
               .copyWith(
                 headlineMedium: GoogleFonts.poppins(
@@ -59,7 +58,6 @@ class PTITWorkerApp extends StatelessWidget {
                 titleLarge: GoogleFonts.poppins(fontWeight: FontWeight.w500),
                 bodyMedium: GoogleFonts.poppins(fontSize: 14),
               ),
-
           appBarTheme: const AppBarTheme(
             backgroundColor: AppColors.primary,
             foregroundColor: Colors.white,
@@ -70,7 +68,6 @@ class PTITWorkerApp extends StatelessWidget {
               fontFamily: 'Poppins',
             ),
           ),
-
           cardTheme: CardThemeData(
             elevation: 2,
             color: Colors.white,
@@ -78,7 +75,6 @@ class PTITWorkerApp extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
             ),
           ),
-
           inputDecorationTheme: InputDecorationTheme(
             contentPadding: const EdgeInsets.symmetric(
               vertical: 16,
@@ -94,7 +90,6 @@ class PTITWorkerApp extends StatelessWidget {
             ),
             labelStyle: const TextStyle(color: AppColors.grey),
           ),
-
           elevatedButtonTheme: ElevatedButtonThemeData(
             style: ElevatedButton.styleFrom(
               shape: RoundedRectangleBorder(
@@ -108,13 +103,11 @@ class PTITWorkerApp extends StatelessWidget {
               ),
             ),
           ),
-
           dialogTheme: DialogThemeData(
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
           ),
-
           bottomNavigationBarTheme: const BottomNavigationBarThemeData(
             selectedItemColor: AppColors.primary,
             unselectedItemColor: AppColors.grey,
@@ -122,13 +115,15 @@ class PTITWorkerApp extends StatelessWidget {
             elevation: 5,
           ),
         ),
-        home: const SplashScreen(),
+        // SỬ DỤNG AuthOrHome để điều phối luồng
+        home: const AuthOrHome(),
+        // KHỐI ROUTES ĐÃ BỊ XÓA VÌ GÂY LỖI
       ),
     );
   }
 }
 
-// (AuthOrHome giữ nguyên)
+// Class kiểm tra đăng nhập và điều hướng sang Splash Loading nếu đã đăng nhập
 class AuthOrHome extends StatefulWidget {
   const AuthOrHome({super.key});
 
@@ -137,7 +132,7 @@ class AuthOrHome extends StatefulWidget {
 }
 
 class _AuthOrHomeState extends State<AuthOrHome> {
-  bool _loading = true;
+  bool _isLoadingAuth = true;
 
   @override
   void initState() {
@@ -148,15 +143,35 @@ class _AuthOrHomeState extends State<AuthOrHome> {
   Future<void> _checkLogin() async {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     await auth.tryAutoLogin();
-    setState(() => _loading = false);
+    setState(() => _isLoadingAuth = false);
   }
 
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
-    if (_loading) {
+
+    // 1. Nếu đang kiểm tra trạng thái đăng nhập tự động
+    if (_isLoadingAuth) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
-    return auth.isAuthenticated ? const GroupListScreen() : const LoginScreen();
+
+    // 2. Nếu đã xác thực thành công (ĐÃ ĐĂNG NHẬP)
+    if (auth.isAuthenticated) {
+      // Trả về SplashScreen để tải dữ liệu GroupListScreen
+      return Builder(
+        builder: (innerContext) {
+          return SplashScreen(
+            // Truyền hàm load dữ liệu tĩnh từ GroupListScreen
+            loadDataFunction: () =>
+                GroupListScreen.loadInitialData(innerContext),
+            // Màn hình tiếp theo sau khi tải xong
+            nextScreen: const GroupListScreen(),
+          );
+        },
+      );
+    }
+
+    // 3. Nếu chưa đăng nhập
+    return const LoginScreen();
   }
 }

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:pythonproject/screens/group_list_screen.dart';
+import 'package:pythonproject/screens/splash_screen.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/custom_button.dart';
 import '../core/app_colors.dart';
@@ -17,30 +19,32 @@ class _LoginScreenState extends State<LoginScreen> {
   final _accountCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   bool _loading = false;
+Future<void> _login() async {
+  setState(() => _loading = true);
+  try {
+    await Provider.of<AuthProvider>(context, listen: false)
+        .login(_accountCtrl.text, _passwordCtrl.text);
 
-  Future<void> _login() async {
-    setState(() => _loading = true);
-    try {
-      await Provider.of<AuthProvider>(context, listen: false)
-          .login(_accountCtrl.text, _passwordCtrl.text);
-
-      // (XÓA) Bỏ 4 dòng Navigator.pushReplacement
-      // if (mounted) {
-      //   Navigator.pushReplacement(context,
-      //       MaterialPageRoute(builder: (_) => const GroupListScreen()));
-      // }
-      // AuthOrHome sẽ tự động xử lý việc chuyển màn hình
-      
-    } catch (e) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Sai tài khoản hoặc mật khẩu')));
-    } finally {
-      // (CẬP NHẬT) Thêm if (mounted)
-      if (mounted) {
-        setState(() => _loading = false);
-      }
+    if (mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => SplashScreen(
+            loadDataFunction: () => GroupListScreen.loadInitialData(context),
+            nextScreen: const GroupListScreen(),
+          ),
+        ),
+      );
     }
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Sai tài khoản hoặc mật khẩu')),
+    );
+  } finally {
+    if (mounted) setState(() => _loading = false);
   }
+}
+
 
   @override
   Widget build(BuildContext context) {

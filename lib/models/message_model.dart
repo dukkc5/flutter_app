@@ -1,26 +1,25 @@
 class MessageModel {
-  final int messageId;
-  final int userId;
+  final String id;
+  final String senderId;
+  final String senderName;
   final String content;
-  final DateTime timestamp;
-  final String fullName; // Tên người gửi
+  final DateTime createdAt;
 
   MessageModel({
-    required this.messageId,
-    required this.userId,
+    required this.id,
+    required this.senderId,
+    required this.senderName,
     required this.content,
-    required this.timestamp,
-    required this.fullName,
+    required this.createdAt,
   });
 
   factory MessageModel.fromJson(Map<String, dynamic> json) {
     return MessageModel(
-      messageId: json['message_id'],
-      userId: json['user_id'],
+      id: json['id'].toString(),
+      senderId: json['sender_id'].toString(),
+      senderName: json['sender_name'] ?? '',
       content: json['content'] ?? '',
-      // Xử lý timestamp từ ISO 8601 string
-      timestamp: DateTime.parse(json['timestamp']),
-      fullName: json['full_name'] ?? 'Ẩn danh',
+      createdAt: DateTime.parse(json['created_at']),
     );
   }
 }

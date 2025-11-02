@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:pythonproject/screens/chat_screen.dart';
 import '../models/group_model.dart';
 import '../core/app_colors.dart';
 import '../providers/task_provider.dart';
@@ -29,7 +30,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen>
   final _descCtrl = TextEditingController();
   final _statusCtrl = TextEditingController();
   final _accountCtrl = TextEditingController();
-  final _assignCommentCtrl = TextEditingController(); 
+  final _assignCommentCtrl = TextEditingController();
 
   DateTime? _selectedDeadline;
   final List<String> _taskStatuses = ['đang làm', 'hoàn thành', 'trễ hạn'];
@@ -49,7 +50,6 @@ class _GroupDetailScreenState extends State<GroupDetailScreen>
     await groupProvider.fetchUserRoleInGroup(widget.group.id);
   }
 
-
   Future<void> _loadTasks() async {
     final taskProvider = Provider.of<TaskProvider>(context, listen: false);
     setState(() => _isLoadingTasks = true);
@@ -57,8 +57,9 @@ class _GroupDetailScreenState extends State<GroupDetailScreen>
       await taskProvider.fetchTasksForGroup(widget.group.id);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Lỗi tải nhiệm vụ: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Lỗi tải nhiệm vụ: $e')));
       }
     } finally {
       if (mounted) {
@@ -74,8 +75,9 @@ class _GroupDetailScreenState extends State<GroupDetailScreen>
       await groupProvider.fetchMembersForGroup(widget.group.id);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Lỗi tải thành viên: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Lỗi tải thành viên: $e')));
       }
     } finally {
       if (mounted) {
@@ -128,18 +130,33 @@ class _GroupDetailScreenState extends State<GroupDetailScreen>
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    TextField( controller: _titleCtrl, decoration: const InputDecoration(labelText: 'Tiêu đề'), ),
+                    TextField(
+                      controller: _titleCtrl,
+                      decoration: const InputDecoration(labelText: 'Tiêu đề'),
+                    ),
                     const SizedBox(height: 15),
-                    TextField( controller: _descCtrl, decoration: const InputDecoration(labelText: 'Mô tả'), ),
+                    TextField(
+                      controller: _descCtrl,
+                      decoration: const InputDecoration(labelText: 'Mô tả'),
+                    ),
                     const SizedBox(height: 15),
                     DropdownButtonFormField<String>(
                       value: _statusCtrl.text,
-                      decoration: const InputDecoration(labelText: 'Trạng thái'),
+                      decoration: const InputDecoration(
+                        labelText: 'Trạng thái',
+                      ),
                       items: _taskStatuses.map((String status) {
-                        return DropdownMenuItem<String>( value: status, child: Text(status), );
+                        return DropdownMenuItem<String>(
+                          value: status,
+                          child: Text(status),
+                        );
                       }).toList(),
                       onChanged: (String? newValue) {
-                        if (newValue != null) { setDialogState(() { _statusCtrl.text = newValue; }); }
+                        if (newValue != null) {
+                          setDialogState(() {
+                            _statusCtrl.text = newValue;
+                          });
+                        }
                       },
                     ),
                     const SizedBox(height: 20),
@@ -147,12 +164,17 @@ class _GroupDetailScreenState extends State<GroupDetailScreen>
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Expanded(
-                          child: Text( _selectedDeadline == null ? 'Chưa chọn deadline'
+                          child: Text(
+                            _selectedDeadline == null
+                                ? 'Chưa chọn deadline'
                                 : 'Deadline: ${_selectedDeadline!.day}/${_selectedDeadline!.month}/${_selectedDeadline!.year}',
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.calendar_month, color: AppColors.primary),
+                          icon: const Icon(
+                            Icons.calendar_month,
+                            color: AppColors.primary,
+                          ),
                           onPressed: () async {
                             final now = DateTime.now();
                             final pickedDate = await showDatePicker(
@@ -161,7 +183,11 @@ class _GroupDetailScreenState extends State<GroupDetailScreen>
                               firstDate: now.subtract(const Duration(days: 30)),
                               lastDate: now.add(const Duration(days: 365)),
                             );
-                            if (pickedDate != null) { setDialogState(() { _selectedDeadline = pickedDate; }); }
+                            if (pickedDate != null) {
+                              setDialogState(() {
+                                _selectedDeadline = pickedDate;
+                              });
+                            }
                           },
                         ),
                       ],
@@ -170,9 +196,13 @@ class _GroupDetailScreenState extends State<GroupDetailScreen>
                 ),
               ),
               actions: [
-                TextButton( onPressed: () => Navigator.pop(ctx), child: const Text('Hủy'), ),
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Hủy'),
+                ),
                 ElevatedButton(
-                  onPressed: _selectedDeadline == null ? null
+                  onPressed: _selectedDeadline == null
+                      ? null
                       : () => _handleSaveTask(ctx, existingTask: existingTask),
                   child: const Text('Lưu'),
                 ),
@@ -187,112 +217,130 @@ class _GroupDetailScreenState extends State<GroupDetailScreen>
   // Bottom Sheet chọn người gán task (nút này chỉ xuất hiện khi là Leader)
 
   void _showAddMemberDialog() {
-     _accountCtrl.clear();
-     showDialog(
-       context: context,
-       builder: (ctx) => AlertDialog(
-         title: const Text('Mời thành viên'),
-         content: TextField(
-           controller: _accountCtrl,
-           decoration: const InputDecoration(labelText: 'Tài khoản (account)'),
-           autofocus: true,
-         ),
-         actions: [
-           TextButton(
-             onPressed: () => Navigator.pop(ctx),
-             child: const Text('Hủy'),
-           ),
-           ElevatedButton(
-             onPressed: () => _handleInviteMember(ctx),
-             child: const Text('Mời'),
-           ),
-         ],
-       ),
-     );
+    _accountCtrl.clear();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Mời thành viên'),
+        content: TextField(
+          controller: _accountCtrl,
+          decoration: const InputDecoration(labelText: 'Tài khoản (account)'),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Hủy'),
+          ),
+          ElevatedButton(
+            onPressed: () => _handleInviteMember(ctx),
+            child: const Text('Mời'),
+          ),
+        ],
+      ),
+    );
   }
 
   // Dialog quản lý thành viên (Chỉ Leader mới thấy)
   void _showMemberOptionsDialog(MemberModel member) {
-     final isLeader = Provider.of<GroupProvider>(context, listen: false).currentGroupRole == 'leader';
-     final isCurrentUser = Provider.of<AuthProvider>(context, listen: false).account == member.account;
+    final isLeader =
+        Provider.of<GroupProvider>(context, listen: false).currentGroupRole ==
+        'leader';
+    final isCurrentUser =
+        Provider.of<AuthProvider>(context, listen: false).account ==
+        member.account;
 
-     if (!isLeader && !isCurrentUser) {
-       // Nếu không phải Leader và không phải chính mình, chỉ hiện dialog thông tin
-       showDialog(
-         context: context,
-         builder: (context) => AlertDialog( // (SỬA LỖI) Đặt tên context
-           title: Text('Thông tin ${member.fullName}'),
-           content: Text('Vai trò: ${member.role}\nTài khoản: ${member.account}'),
-           actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Đóng'))],
-         ),
-       );
-       return;
-     }
-     
-     // Nếu là Leader hoặc chính mình, hiện dialog quản lý
-     showDialog(
-       context: context,
-       builder: (ctx) => AlertDialog(
-         title: Text(member.fullName),
-         content: Column(
-           mainAxisSize: MainAxisSize.min,
-           children: [
-             // Chuyển thành Leader (Chỉ Leader mới thấy)
-             if (isLeader && member.role != 'leader')
-               ListTile(
-                 leading: const Icon(Icons.arrow_upward, color: Colors.blue),
-                 title: const Text('Chuyển thành Leader'),
-                 onTap: () {
-                   Navigator.pop(ctx);
-                   _handlePromoteMember(member);
-                 },
-               ),
-             // Xóa khỏi nhóm (Chỉ Leader mới thấy)
-             if (isLeader && !isCurrentUser)
-               ListTile(
-                 leading: const Icon(Icons.delete, color: AppColors.primary),
-                 title: const Text('Xóa khỏi nhóm'),
-                 onTap: () {
-                   Navigator.pop(ctx);
-                   _handleDeleteMember(member);
-                 },
-               ),
-             // Thông tin cơ bản (Nếu không có quyền quản lý, vẫn thấy)
-             ListTile(
-                leading: const Icon(Icons.info_outline, color: Colors.grey),
-                title: Text('Vai trò: ${member.role}'),
-                subtitle: Text('Tài khoản: ${member.account}'),
-             ),
-           ],
-         ),
-         actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Đóng'))],
-       ),
-     );
+    if (!isLeader && !isCurrentUser) {
+      // Nếu không phải Leader và không phải chính mình, chỉ hiện dialog thông tin
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          // (SỬA LỖI) Đặt tên context
+          title: Text('Thông tin ${member.fullName}'),
+          content: Text(
+            'Vai trò: ${member.role}\nTài khoản: ${member.account}',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Đóng'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    // Nếu là Leader hoặc chính mình, hiện dialog quản lý
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(member.fullName),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Chuyển thành Leader (Chỉ Leader mới thấy)
+            if (isLeader && member.role != 'leader')
+              ListTile(
+                leading: const Icon(Icons.arrow_upward, color: Colors.blue),
+                title: const Text('Chuyển thành Leader'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _handlePromoteMember(member);
+                },
+              ),
+            // Xóa khỏi nhóm (Chỉ Leader mới thấy)
+            if (isLeader && !isCurrentUser)
+              ListTile(
+                leading: const Icon(Icons.delete, color: AppColors.primary),
+                title: const Text('Xóa khỏi nhóm'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _handleDeleteMember(member);
+                },
+              ),
+            // Thông tin cơ bản (Nếu không có quyền quản lý, vẫn thấy)
+            ListTile(
+              leading: const Icon(Icons.info_outline, color: Colors.grey),
+              title: Text('Vai trò: ${member.role}'),
+              subtitle: Text('Tài khoản: ${member.account}'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Đóng'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showDeleteGroupDialog() {
-     showDialog(
-       context: context,
-       builder: (ctx) => AlertDialog(
-         title: const Text('Xác nhận xóa nhóm'),
-         content:
-             Text('Bạn có chắc chắn muốn xóa nhóm "${widget.group.name}" không?'),
-         actions: [
-           TextButton(
-             onPressed: () => Navigator.pop(ctx),
-             child: const Text('Hủy'),
-           ),
-           ElevatedButton(
-             onPressed: () {
-               Navigator.pop(ctx);
-               _handleDeleteGroup();
-             },
-             style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-             child: const Text('Xóa', style: TextStyle(color: Colors.white)),
-           ),
-         ],
-       ),
-     );
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Xác nhận xóa nhóm'),
+        content: Text(
+          'Bạn có chắc chắn muốn xóa nhóm "${widget.group.name}" không?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Hủy'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _handleDeleteGroup();
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            child: const Text('Xóa', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showLeaveGroupDialog() {
@@ -300,8 +348,9 @@ class _GroupDetailScreenState extends State<GroupDetailScreen>
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Xác nhận rời nhóm'),
-        content:
-            Text('Bạn có chắc chắn muốn rời khỏi nhóm "${widget.group.name}" không?'),
+        content: Text(
+          'Bạn có chắc chắn muốn rời khỏi nhóm "${widget.group.name}" không?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -313,118 +362,139 @@ class _GroupDetailScreenState extends State<GroupDetailScreen>
               _handleLeaveGroup();
             },
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-            child: const Text('Rời Nhóm', style: TextStyle(color: Colors.white)),
+            child: const Text(
+              'Rời Nhóm',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Future<void> _handleSaveTask(BuildContext dialogContext,
-      {TaskModel? existingTask}) async {
+  Future<void> _handleSaveTask(
+    BuildContext dialogContext, {
+    TaskModel? existingTask,
+  }) async {
     if (_titleCtrl.text.isEmpty || _selectedDeadline == null) return;
     final taskProvider = Provider.of<TaskProvider>(context, listen: false);
     try {
       if (existingTask != null) {
         await taskProvider.updateTask(
-          widget.group.id, existingTask.id, _titleCtrl.text,
-          _descCtrl.text, _statusCtrl.text, _selectedDeadline!,
+          widget.group.id,
+          existingTask.id,
+          _titleCtrl.text,
+          _descCtrl.text,
+          _statusCtrl.text,
+          _selectedDeadline!,
         );
       } else {
         await taskProvider.createTask(
-          widget.group.id, _titleCtrl.text, _descCtrl.text,
-          _selectedDeadline!, _statusCtrl.text,
+          widget.group.id,
+          _titleCtrl.text,
+          _descCtrl.text,
+          _selectedDeadline!,
+          _statusCtrl.text,
         );
       }
       if (mounted) Navigator.pop(dialogContext);
     } catch (e) {
-      if (mounted) { Navigator.pop(dialogContext); ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: ${e.toString()}'))); }
+      if (mounted) {
+        Navigator.pop(dialogContext);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Lỗi: ${e.toString()}')));
+      }
     }
   }
 
   Future<void> _handleDeleteTask(int taskId) async {
-     final taskProvider = Provider.of<TaskProvider>(context, listen: false);
-     try {
-       await taskProvider.deleteTask(widget.group.id, taskId);
-     } catch (e) {
-       if (mounted) {
-         ScaffoldMessenger.of(context)
-             .showSnackBar(SnackBar(content: Text('Lỗi: ${e.toString()}')));
-       }
-     }
+    final taskProvider = Provider.of<TaskProvider>(context, listen: false);
+    try {
+      await taskProvider.deleteTask(widget.group.id, taskId);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Lỗi: ${e.toString()}')));
+      }
+    }
   }
 
   Future<void> _handleInviteMember(BuildContext dialogContext) async {
-     if (_accountCtrl.text.isEmpty) return;
-     final groupProvider = Provider.of<GroupProvider>(context, listen: false);
-     try {
-       await groupProvider.inviteMember(widget.group.id, _accountCtrl.text);
-       if (mounted) {
-         Navigator.pop(dialogContext);
-         ScaffoldMessenger.of(context).showSnackBar(
-           const SnackBar(content: Text('Đã gửi lời mời thành công!')),
-         );
-       }
-     } catch (e) {
-       if (mounted) {
-         Navigator.pop(dialogContext);
-         ScaffoldMessenger.of(context)
-             .showSnackBar(SnackBar(content: Text('Lỗi: ${e.toString()}')));
-       }
-     }
+    if (_accountCtrl.text.isEmpty) return;
+    final groupProvider = Provider.of<GroupProvider>(context, listen: false);
+    try {
+      await groupProvider.inviteMember(widget.group.id, _accountCtrl.text);
+      if (mounted) {
+        Navigator.pop(dialogContext);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Đã gửi lời mời thành công!')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(dialogContext);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Lỗi: ${e.toString()}')));
+      }
+    }
   }
 
   Future<void> _handleDeleteMember(MemberModel member) async {
-     final groupProvider = Provider.of<GroupProvider>(context, listen: false);
-     try {
-       await groupProvider.deleteMember(widget.group.id, member.account);
-       if (mounted) {
-         ScaffoldMessenger.of(context).showSnackBar(
-           SnackBar(content: Text('Đã xóa ${member.fullName}')),
-         );
-       }
-     } catch (e) {
-       if (mounted) {
-         ScaffoldMessenger.of(context)
-             .showSnackBar(SnackBar(content: Text('Lỗi: ${e.toString()}')));
-       }
-     }
+    final groupProvider = Provider.of<GroupProvider>(context, listen: false);
+    try {
+      await groupProvider.deleteMember(widget.group.id, member.account);
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Đã xóa ${member.fullName}')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Lỗi: ${e.toString()}')));
+      }
+    }
   }
 
   Future<void> _handlePromoteMember(MemberModel member) async {
-     final groupProvider = Provider.of<GroupProvider>(context, listen: false);
-     try {
-       await groupProvider.promoteMember(widget.group.id, member.userId);
-       if (mounted) {
-         ScaffoldMessenger.of(context).showSnackBar(
-           SnackBar(content: Text('Đã chuyển ${member.fullName} thành Leader')),
-           
-         );
-       }
-     } catch (e) {
-       if (mounted) {
-         ScaffoldMessenger.of(context)
-             .showSnackBar(SnackBar(content: Text('Lỗi: ${e.toString()}')));
-       }
-     }
+    final groupProvider = Provider.of<GroupProvider>(context, listen: false);
+    try {
+      await groupProvider.promoteMember(widget.group.id, member.userId);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Đã chuyển ${member.fullName} thành Leader')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Lỗi: ${e.toString()}')));
+      }
+    }
   }
 
   Future<void> _handleDeleteGroup() async {
-     final groupProvider = Provider.of<GroupProvider>(context, listen: false);
-     try {
-       await groupProvider.deleteGroup(widget.group.id);
-       if (mounted) {
-         Navigator.pop(context);
-         ScaffoldMessenger.of(context).showSnackBar(
-           SnackBar(content: Text('Đã xóa nhóm "${widget.group.name}"')),
-         );
-       }
-     } catch (e) {
-       if (mounted) {
-         ScaffoldMessenger.of(context)
-             .showSnackBar(SnackBar(content: Text('Lỗi: ${e.toString()}')));
-       }
-     }
+    final groupProvider = Provider.of<GroupProvider>(context, listen: false);
+    try {
+      await groupProvider.deleteGroup(widget.group.id);
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Đã xóa nhóm "${widget.group.name}"')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Lỗi: ${e.toString()}')));
+      }
+    }
   }
 
   Future<void> _handleLeaveGroup() async {
@@ -439,8 +509,9 @@ class _GroupDetailScreenState extends State<GroupDetailScreen>
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Lỗi: ${e.toString()}')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Lỗi: ${e.toString()}')));
       }
     }
   }
@@ -448,7 +519,9 @@ class _GroupDetailScreenState extends State<GroupDetailScreen>
   @override
   Widget build(BuildContext context) {
     final List<TaskModel> tasks = Provider.of<TaskProvider>(context).groupTasks;
-    final List<MemberModel> members = Provider.of<GroupProvider>(context).members;
+    final List<MemberModel> members = Provider.of<GroupProvider>(
+      context,
+    ).members;
     final groupProvider = Provider.of<GroupProvider>(context); // Lắng nghe role
     final textTheme = Theme.of(context).textTheme;
 
@@ -463,12 +536,12 @@ class _GroupDetailScreenState extends State<GroupDetailScreen>
               child: const Icon(Icons.add, color: Colors.white),
             )
           : isLeader && _tabController!.index == 1
-              ? FloatingActionButton(
-                  onPressed: _showAddMemberDialog,
-                  backgroundColor: AppColors.primary,
-                  child: const Icon(Icons.person_add, color: Colors.white),
-                )
-              : null,
+          ? FloatingActionButton(
+              onPressed: _showAddMemberDialog,
+              backgroundColor: AppColors.primary,
+              child: const Icon(Icons.person_add, color: Colors.white),
+            )
+          : null,
 
       body: SafeArea(
         child: Column(
@@ -482,15 +555,37 @@ class _GroupDetailScreenState extends State<GroupDetailScreen>
                   padding: const EdgeInsets.all(16.0),
                   child: Row(
                     children: [
-                      IconButton( icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.primary), onPressed: () => Navigator.pop(context), ),
+                      IconButton(
+                        icon: const Icon(
+                          Icons.arrow_back_ios_new,
+                          color: AppColors.primary,
+                        ),
+                        onPressed: () => Navigator.pop(context),
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: Column( crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text( widget.group.name, style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold), ),
+                            Text(
+                              widget.group.name,
+                              style: textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                             if (widget.group.description.isNotEmpty)
-                              Padding( padding: const EdgeInsets.only(top: 4.0),
-                                child: Text( widget.group.description, style: textTheme.bodyMedium?.copyWith(color: Colors.black54), maxLines: 2, overflow: TextOverflow.ellipsis, ), ),
+                              Padding(
+                                padding: const EdgeInsets.only(top: 4.0),
+                                child: Text(
+                                  widget.group.description,
+                                  style: textTheme.bodyMedium?.copyWith(
+                                    color: Colors.black54,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
                           ],
                         ),
                       ),
@@ -499,30 +594,64 @@ class _GroupDetailScreenState extends State<GroupDetailScreen>
                       // CÁC NÚT HÀNH ĐỘNG
                       // Nút Rời nhóm (hiện cho mọi người)
                       IconButton(
-                        icon: const Icon(Icons.exit_to_app_outlined, color: AppColors.grey),
+                        icon: const Icon(
+                          Icons.exit_to_app_outlined,
+                          color: AppColors.grey,
+                        ),
                         tooltip: 'Rời nhóm',
                         onPressed: _showLeaveGroupDialog,
                       ),
-                      
+                      IconButton(
+                        icon: const Icon(
+                          Icons.chat_bubble_outline,
+                          color: AppColors.primary,
+                        ),
+                        tooltip: 'Tin nhắn nhóm',
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  ChatScreen(groupId: widget.group.id , groupName: widget.group.name,),
+                            ),
+                          );
+                        },
+                      ),
+
                       // Nút Sửa/Xóa Nhóm (Chỉ Leader)
-                      if (isLeader)
-                        ...[
-                          IconButton(
-                            icon: const Icon(Icons.edit_note_outlined, color: AppColors.grey),
-                            tooltip: 'Sửa nhóm',
-                            onPressed: () {
-                              ScaffoldMessenger.of(context).showSnackBar( const SnackBar(content: Text('Chức năng Sửa Nhóm (chưa làm)')), );
-                            },
+                      if (isLeader) ...[
+                        IconButton(
+                          icon: const Icon(
+                            Icons.edit_note_outlined,
+                            color: AppColors.grey,
                           ),
-                          IconButton(
-                            icon: const Icon(Icons.delete_forever_outlined, color: AppColors.primary),
-                            tooltip: 'Xóa nhóm',
-                            onPressed: _showDeleteGroupDialog,
+                          tooltip: 'Sửa nhóm',
+                          onPressed: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Chức năng Sửa Nhóm (chưa làm)'),
+                              ),
+                            );
+                          },
+                        ),
+                        IconButton(
+                          icon: const Icon(
+                            Icons.delete_forever_outlined,
+                            color: AppColors.primary,
                           ),
-                        ],
-                        // Hiển thị loading nếu đang chờ role
-                        if(isLoadingRole)
-                          const SizedBox(width: 24, height: 24, child: Center(child: CircularProgressIndicator(strokeWidth: 2))),
+                          tooltip: 'Xóa nhóm',
+                          onPressed: _showDeleteGroupDialog,
+                        ),
+                      ],
+                      // Hiển thị loading nếu đang chờ role
+                      if (isLoadingRole)
+                        const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: Center(
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -532,8 +661,13 @@ class _GroupDetailScreenState extends State<GroupDetailScreen>
             // TabBar (2 Tabs)
             TabBar(
               controller: _tabController,
-              tabs: const [ Tab(text: 'Nhiệm Vụ'), Tab(text: 'Thành Viên'), ],
-              labelColor: AppColors.primary, unselectedLabelColor: AppColors.grey, indicatorColor: AppColors.primary,
+              tabs: const [
+                Tab(text: 'Nhiệm Vụ'),
+                Tab(text: 'Thành Viên'),
+              ],
+              labelColor: AppColors.primary,
+              unselectedLabelColor: AppColors.grey,
+              indicatorColor: AppColors.primary,
             ),
 
             // TabBarView
@@ -554,10 +688,14 @@ class _GroupDetailScreenState extends State<GroupDetailScreen>
 
   Color _getStatusColor(String status) {
     switch (status) {
-      case 'hoàn thành': return Colors.green.shade50;
-      case 'trễ hạn': return Colors.red.shade50;
-      case 'đang làm': return Colors.blue.shade50;
-      default: return Colors.grey.shade100;
+      case 'hoàn thành':
+        return Colors.green.shade50;
+      case 'trễ hạn':
+        return Colors.red.shade50;
+      case 'đang làm':
+        return Colors.blue.shade50;
+      default:
+        return Colors.grey.shade100;
     }
   }
 
@@ -573,71 +711,91 @@ class _GroupDetailScreenState extends State<GroupDetailScreen>
             child: _isLoadingTasks
                 ? const Center(child: CircularProgressIndicator())
                 : tasks.isEmpty
-                    ? const Center(child: Text('Nhóm chưa có nhiệm vụ nào.'))
-                    : ListView.builder(
-                        key: const ValueKey('task_list'),
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: tasks.length,
-                        itemBuilder: (ctx, i) {
-                          final task = tasks[i];
-                          final statusColor = _getStatusColor(task.status);
+                ? const Center(child: Text('Nhóm chưa có nhiệm vụ nào.'))
+                : ListView.builder(
+                    key: const ValueKey('task_list'),
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: tasks.length,
+                    itemBuilder: (ctx, i) {
+                      final task = tasks[i];
+                      final statusColor = _getStatusColor(task.status);
 
-                          return Dismissible(
-                            key: ValueKey(task.id),
-                            // Chỉ Leader mới xóa
-                            direction: isLeader ? DismissDirection.endToStart : DismissDirection.none, 
-                            onDismissed: (_) { _handleDeleteTask(task.id); },
-                            background: Container(
-                              alignment: Alignment.centerRight,
-                              padding: const EdgeInsets.only(right: 20),
-                              decoration: BoxDecoration(
-                                color: AppColors.primary.withOpacity(0.8),
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: const Icon(Icons.delete, color: Colors.white),
-                             ),
-                            child: Card(
-                              color: statusColor,
-                              child: ListTile(
-                                shape: Theme.of(context).cardTheme.shape,
-                                title: Text(task.title, style: TextStyle(fontWeight: FontWeight.w600)),
-                                subtitle: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(task.description, maxLines: 2, overflow: TextOverflow.ellipsis),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'Trạng thái: ${task.status} | Deadline: ${task.deadline.day}/${task.deadline.month}',
-                                      style: TextStyle(
-                                          fontSize: 12, color: Colors.black87, fontWeight: FontWeight.w500),
-                                    ),
-                                  ],
-                                ),
-                                // Nút Sửa chỉ hiển thị cho Leader
-                                trailing: isLeader ? IconButton( 
-                                  icon: const Icon(Icons.edit_outlined, color: AppColors.grey),
-                                  tooltip: 'Sửa thông tin nhiệm vụ',
-                                  onPressed: () => _showTaskDialog(existingTask: task),
-                                ) : null,
-                                onTap: () {
-                                  // Cho phép mọi người nhấn vào để xem chi tiết giao việc
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => TaskAssignmentsScreen(
-                                        task: task,
-                                        groupId: widget.group.id,
-                                        isLeader: isLeader, // Truyền role
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                          );
+                      return Dismissible(
+                        key: ValueKey(task.id),
+                        // Chỉ Leader mới xóa
+                        direction: isLeader
+                            ? DismissDirection.endToStart
+                            : DismissDirection.none,
+                        onDismissed: (_) {
+                          _handleDeleteTask(task.id);
                         },
-                      ),
+                        background: Container(
+                          alignment: Alignment.centerRight,
+                          padding: const EdgeInsets.only(right: 20),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(0.8),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: const Icon(Icons.delete, color: Colors.white),
+                        ),
+                        child: Card(
+                          color: statusColor,
+                          child: ListTile(
+                            shape: Theme.of(context).cardTheme.shape,
+                            title: Text(
+                              task.title,
+                              style: TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  task.description,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Trạng thái: ${task.status} | Deadline: ${task.deadline.day}/${task.deadline.month}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.black87,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            // Nút Sửa chỉ hiển thị cho Leader
+                            trailing: isLeader
+                                ? IconButton(
+                                    icon: const Icon(
+                                      Icons.edit_outlined,
+                                      color: AppColors.grey,
+                                    ),
+                                    tooltip: 'Sửa thông tin nhiệm vụ',
+                                    onPressed: () =>
+                                        _showTaskDialog(existingTask: task),
+                                  )
+                                : null,
+                            onTap: () {
+                              // Cho phép mọi người nhấn vào để xem chi tiết giao việc
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => TaskAssignmentsScreen(
+                                    task: task,
+                                    groupId: widget.group.id,
+                                    isLeader: isLeader, // Truyền role
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      );
+                    },
+                  ),
           ),
           const SizedBox(height: 80),
         ],
@@ -647,9 +805,12 @@ class _GroupDetailScreenState extends State<GroupDetailScreen>
 
   // Widget Member View (Kiểm soát quyền quản lý thành viên)
   Widget _buildMemberView(List<MemberModel> members, bool isLeader) {
-     final currentAccount = Provider.of<AuthProvider>(context, listen: false).account;
+    final currentAccount = Provider.of<AuthProvider>(
+      context,
+      listen: false,
+    ).account;
 
-     return SingleChildScrollView(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -659,42 +820,49 @@ class _GroupDetailScreenState extends State<GroupDetailScreen>
             child: _isLoadingMembers
                 ? const Center(child: CircularProgressIndicator())
                 : members.isEmpty
-                    ? const Center(child: Text('Nhóm không có thành viên nào.'))
-                    : ListView.builder(
-                        key: const ValueKey('member_list'),
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: members.length,
-                        itemBuilder: (_, i) {
-                          final member = members[i];
-                          final isCurrentUser = member.account == currentAccount;
+                ? const Center(child: Text('Nhóm không có thành viên nào.'))
+                : ListView.builder(
+                    key: const ValueKey('member_list'),
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: members.length,
+                    itemBuilder: (_, i) {
+                      final member = members[i];
+                      final isCurrentUser = member.account == currentAccount;
 
-                          return Card(
-                            child: ListTile(
-                              shape: Theme.of(context).cardTheme.shape,
-                              title: Text(
-                                member.fullName,
-                                style: TextStyle(
-                                  fontWeight: member.role == 'leader' ? FontWeight.bold : FontWeight.normal,
-                                ),
-                              ),
-                              subtitle: Text('Vai trò: ${member.role}'),
-                              // Logic hiển thị nút 3 chấm: Chỉ Leader và không phải chính mình
-                              trailing: (isLeader && !isCurrentUser) ? IconButton( 
-                                icon: const Icon(Icons.more_vert),
-                                onPressed: () => _showMemberOptionsDialog(member),
-                              ) : null,
-                              // Member KHÔNG được ấn vào (onTap = null)
-                              // Trừ khi là Leader (để quản lý) HOẶC chính mình (để xem thông tin)
-                              onTap: isLeader || isCurrentUser ? () => _showMemberOptionsDialog(member) : null,
+                      return Card(
+                        child: ListTile(
+                          shape: Theme.of(context).cardTheme.shape,
+                          title: Text(
+                            member.fullName,
+                            style: TextStyle(
+                              fontWeight: member.role == 'leader'
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
                             ),
-                          );
-                        },
-                      ),
+                          ),
+                          subtitle: Text('Vai trò: ${member.role}'),
+                          // Logic hiển thị nút 3 chấm: Chỉ Leader và không phải chính mình
+                          trailing: (isLeader && !isCurrentUser)
+                              ? IconButton(
+                                  icon: const Icon(Icons.more_vert),
+                                  onPressed: () =>
+                                      _showMemberOptionsDialog(member),
+                                )
+                              : null,
+                          // Member KHÔNG được ấn vào (onTap = null)
+                          // Trừ khi là Leader (để quản lý) HOẶC chính mình (để xem thông tin)
+                          onTap: isLeader || isCurrentUser
+                              ? () => _showMemberOptionsDialog(member)
+                              : null,
+                        ),
+                      );
+                    },
+                  ),
           ),
           const SizedBox(height: 80),
         ],
       ),
-     );
-   }
+    );
+  }
 }

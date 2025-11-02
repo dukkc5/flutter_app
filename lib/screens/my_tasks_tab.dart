@@ -2,6 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/task_provider.dart';
 import '../models/my_task_model.dart';
+import '../screens/group_detail_screen.dart'; 
+import '../providers/group_provider.dart';
+import '../models/group_model.dart'; 
+
+// Hàm hỗ trợ (Giả định được định nghĩa/import)
+Color getMyTaskStatusColor(String? status) {
+  switch (status) {
+    case 'hoàn thành': return Colors.green.shade50;
+    case 'trễ hạn': return Colors.red.shade50;
+    case 'đang làm': return Colors.blue.shade50;
+    case 'pending': return Colors.yellow.shade50;
+    default: return Colors.grey.shade100;
+  }
+}
+
+String formatMyTaskDate(DateTime date) {
+  return '${date.day}/${date.month}/${date.year}';
+}
 
 class MyTaskListView extends StatefulWidget {
   const MyTaskListView({super.key});
@@ -37,6 +55,33 @@ class _MyTaskListViewState extends State<MyTaskListView> {
     });
   }
 
+  // HÀM XỬ LÝ KHI NHẤN VÀO NHIỆM VỤ: Điều hướng đến trang chi tiết nhóm (Tìm kiếm bằng groupId)
+  void _navigateToGroupDetail(BuildContext context, MyTaskModel myTask) {
+    final groupProvider = Provider.of<GroupProvider>(context, listen: false);
+    
+    final GroupModel group;
+    try {
+      // TÌM KIẾM NHÓM DỰA TRÊN GROUP ID (Cách chính xác và an toàn)
+      group = groupProvider.groups.firstWhere(
+        (g) => g.id == myTask.groupId, 
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Lỗi: Không tìm thấy nhóm tương ứng. Hãy đảm bảo nhóm đã được tải.')),
+      );
+      return;
+    }
+    
+    // Chuyển đến trang chi tiết nhóm
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => GroupDetailScreen(group: group),
+      ),
+    );
+  }
+
+
   @override
   Widget build(BuildContext context) {
     final myTasks = Provider.of<TaskProvider>(context).myTasks;
@@ -54,12 +99,13 @@ class _MyTaskListViewState extends State<MyTaskListView> {
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   itemBuilder: (context, i) {
                     final task = myTasks[i];
-                    // (CẬP NHẬT) Lấy màu theo status
                     final statusColor = getMyTaskStatusColor(task.status); 
 
                     return Card(
                       color: statusColor,
                       child: ListTile(
+                        // GỌI HÀM ĐIỀU HƯỚNG KHI NHẤN
+                        onTap: () => _navigateToGroupDetail(context, task),
                         shape: Theme.of(context).cardTheme.shape,
                         title: Text(task.taskTitle, style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
                         subtitle: Column(
@@ -76,23 +122,22 @@ class _MyTaskListViewState extends State<MyTaskListView> {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                             Padding(
-                               padding: const EdgeInsets.only(top: 4.0),
-                               child: Text(
-                                 'Hạn: ${formatMyTaskDate(task.deadline)}', 
-                                 style: textTheme.bodySmall?.copyWith(color: Colors.black54),
-                               ),
-                             ),
+                              Padding(
+                                padding: const EdgeInsets.only(top: 4.0),
+                                child: Text(
+                                  'Hạn: ${formatMyTaskDate(task.deadline)}', 
+                                  style: textTheme.bodySmall?.copyWith(color: Colors.black54),
+                                ),
+                              ),
                           ],
                         ),
-                        // (CẬP NHẬT) Thêm lại Chip Status
                         trailing: Chip(
-                           label: Text(task.status ?? 'N/A', style: TextStyle(fontSize: 10)),
-                           backgroundColor: statusColor, // Dùng màu nền nhạt
-                           side: BorderSide(color: Colors.grey.shade300), // Thêm viền
-                           padding: EdgeInsets.zero,
-                           labelPadding: const EdgeInsets.symmetric(horizontal: 8),
-                           visualDensity: VisualDensity.compact,
+                            label: Text(task.status ?? 'N/A', style: TextStyle(fontSize: 10)),
+                            backgroundColor: statusColor, 
+                            side: BorderSide(color: Colors.grey.shade300), 
+                            padding: EdgeInsets.zero,
+                            labelPadding: const EdgeInsets.symmetric(horizontal: 8),
+                            visualDensity: VisualDensity.compact,
                         ),
                       ),
                     );
@@ -100,4 +145,3 @@ class _MyTaskListViewState extends State<MyTaskListView> {
     );
   }
 }
-

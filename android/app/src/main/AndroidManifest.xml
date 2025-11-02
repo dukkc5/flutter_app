@@ -4,7 +4,7 @@
     <uses-permission android:name="android.permission.INTERNET"/>
 
     <application
-        android:label="pythonproject"
+        android:label="PTIT Team"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true"> <!-- (MỚI) Thêm quyền truy cập HTTP (cho 10.0.2.2) -->
