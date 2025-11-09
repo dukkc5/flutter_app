@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:loader_overlay/loader_overlay.dart';
 import 'package:provider/provider.dart';
+import 'package:pythonproject/providers/notification_provider.dart';
 import 'package:pythonproject/screens/splash_screen.dart';
 import 'providers/auth_provider.dart';
 import 'providers/group_provider.dart';
@@ -37,6 +39,10 @@ class PTITWorkerApp extends StatelessWidget {
       create: (context) => InvitationProvider(context.read<AuthProvider>()),
       update: (context, auth, previous) => InvitationProvider(auth),
     ),
+    ChangeNotifierProxyProvider<AuthProvider, NotificationProvider>(
+          create: (context) => NotificationProvider(Provider.of<AuthProvider>(context, listen: false)),
+          update: (context, auth, _) => NotificationProvider(auth),
+        ),
   ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
@@ -116,7 +122,7 @@ class PTITWorkerApp extends StatelessWidget {
           ),
         ),
         // SỬ DỤNG AuthOrHome để điều phối luồng
-        home: const AuthOrHome(),
+        home:  LoaderOverlay(child: AuthOrHome()),
         // KHỐI ROUTES ĐÃ BỊ XÓA VÌ GÂY LỖI
       ),
     );

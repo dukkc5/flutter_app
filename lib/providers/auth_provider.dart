@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io'; // (MỚI) Import 'dart:io'
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -8,10 +9,12 @@ class AuthProvider extends ChangeNotifier {
   String? _token;
   String? _fullName;
   String? _account;
+  String? _avatarUrl; // (MỚI) Thêm trường avatar
 
   String? get token => _token;
   String? get fullName => _fullName;
   String? get account => _account;
+  String? get avatarUrl => _avatarUrl; // (MỚI) Thêm getter
   bool get isAuthenticated => _token != null;
 
   /// Lấy thông tin user hiện tại từ token
@@ -28,6 +31,7 @@ class AuthProvider extends ChangeNotifier {
         final data = jsonDecode(res.body);
         _fullName = data['full_name'];
         _account = data['account'];
+        _avatarUrl = data['avatar_url']; // (MỚI) Lấy avatar_url từ API
         print('✅ fetchCurrentUser thành công: $_fullName ($_account)');
         notifyListeners();
       } else {
@@ -36,6 +40,38 @@ class AuthProvider extends ChangeNotifier {
       }
     } catch (e) {
       print('❌ Lỗi mạng fetchCurrentUser: $e');
+    }
+  }
+  
+  // (MỚI) Hàm tải avatar user lên
+  Future<void> uploadAvatar(File imageFile) async {
+    if (_token == null) throw Exception("Chưa đăng nhập");
+
+    final url = Uri.parse('${ApiConfig.baseUrl}/auth/me/avatar');
+    final request = http.MultipartRequest('POST', url);
+    
+    // Thêm header
+    request.headers['Authorization'] = 'Bearer $_token';
+    
+    // Thêm file
+    request.files.add(
+      await http.MultipartFile.fromPath(
+        'file', // (Tên trường này phải khớp với FastAPI)
+        imageFile.path,
+      ),
+    );
+
+    // Gửi request
+    final streamedResponse = await request.send();
+    final res = await http.Response.fromStream(streamedResponse);
+
+    if (res.statusCode == 200) {
+      // Cập nhật lại avatar_url trong state
+      final data = jsonDecode(res.body);
+      _avatarUrl = data['avatar_url'];
+      notifyListeners();
+    } else {
+      throw Exception('Tải ảnh thất bại: ${res.body}');
     }
   }
 
@@ -63,7 +99,7 @@ class AuthProvider extends ChangeNotifier {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('access_token', _token!);
 
-        // Lấy thông tin user ngay sau khi login
+        // Lấy thông tin user ngay sau khi login (sẽ lấy cả avatar)
         await fetchCurrentUser();
 
         notifyListeners();
@@ -111,6 +147,7 @@ class AuthProvider extends ChangeNotifier {
     _token = savedToken;
     print('✅ Đã load token từ SharedPreferences: $_token');
 
+    // Sẽ lấy cả avatar
     await fetchCurrentUser();
     notifyListeners();
   }
@@ -122,6 +159,7 @@ class AuthProvider extends ChangeNotifier {
     _token = null;
     _fullName = null;
     _account = null;
+    _avatarUrl = null; // (MỚI) Xóa avatar khi logout
     notifyListeners();
     print('🚪 Đã đăng xuất');
   }
